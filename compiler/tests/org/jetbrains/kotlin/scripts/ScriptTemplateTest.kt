@@ -74,7 +74,9 @@ class ScriptTemplateTest {
 
     @Test
     fun testScriptWithDependsAnn() {
-        val aClass = compileScript("fib_ext_ann.kts", ScriptWithIntParam::class, null)
+        Assert.assertNull(compileScript("fib_ext_ann.kts", ScriptWithIntParamAndDummyResolver::class, null, includeKotlinRuntime = false))
+
+        val aClass = compileScript("fib_ext_ann.kts", ScriptWithIntParam::class, null, includeKotlinRuntime = false)
         Assert.assertNotNull(aClass)
         val out = captureOut {
             aClass!!.getConstructor(Integer.TYPE).newInstance(4)
@@ -84,7 +86,9 @@ class ScriptTemplateTest {
 
     @Test
     fun testScriptWithDependsAnn2() {
-        val aClass = compileScript("fib_ext_ann2.kts", ScriptWithIntParam::class, null)
+        Assert.assertNull(compileScript("fib_ext_ann2.kts", ScriptWithIntParamAndDummyResolver::class, null, includeKotlinRuntime = false))
+
+        val aClass = compileScript("fib_ext_ann2.kts", ScriptWithIntParam::class, null, includeKotlinRuntime = false)
         Assert.assertNotNull(aClass)
         val out = captureOut {
             aClass!!.getConstructor(Integer.TYPE).newInstance(4)
@@ -172,14 +176,16 @@ class ScriptTemplateTest {
             scriptTemplate: KClass<out Any>,
             environment: Map<String, Any?>? = null,
             runIsolated: Boolean = true,
-            suppressOutput: Boolean = false): Class<*>? =
-            compileScriptImpl("compiler/testData/script/" + scriptPath, KotlinScriptDefinitionFromTemplate(scriptTemplate, null, null, environment), runIsolated, suppressOutput)
+            suppressOutput: Boolean = false,
+            includeKotlinRuntime: Boolean = true): Class<*>? =
+            compileScriptImpl("compiler/testData/script/" + scriptPath, KotlinScriptDefinitionFromTemplate(scriptTemplate, null, null, environment), runIsolated, suppressOutput, includeKotlinRuntime)
 
     private fun compileScriptImpl(
             scriptPath: String,
             scriptDefinition: KotlinScriptDefinition,
             runIsolated: Boolean,
-            suppressOutput: Boolean): Class<*>?
+            suppressOutput: Boolean,
+            includeKotlinRuntime: Boolean): Class<*>?
     {
         val paths = PathUtil.getKotlinPathsForDistDirectory()
         val messageCollector =
@@ -188,7 +194,7 @@ class ScriptTemplateTest {
 
         val rootDisposable = Disposer.newDisposable()
         try {
-            val configuration = KotlinTestUtils.newConfiguration(ConfigurationKind.JDK_ONLY, TestJdkKind.FULL_JDK)
+            val configuration = KotlinTestUtils.newConfiguration(if (includeKotlinRuntime) ConfigurationKind.ALL else ConfigurationKind.JDK_ONLY, TestJdkKind.FULL_JDK)
             configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
             configuration.addKotlinSourceRoot(scriptPath)
             configuration.add(JVMConfigurationKeys.SCRIPT_DEFINITIONS, scriptDefinition)
@@ -217,7 +223,31 @@ class ScriptTemplateTest {
     }
 }
 
-class TestKotlinScriptDependenciesResolver : ScriptDependenciesResolver {
+open class TestKotlinScriptDummyDependenciesResolver : ScriptDependenciesResolver {
+
+    private val kotlinPaths by lazy { PathUtil.getKotlinPathsForCompiler() }
+
+    @AcceptedAnnotations(DependsOn::class, DependsOnTwo::class)
+    override fun resolve(script: ScriptContents,
+                         environment: Map<String, Any?>?,
+                         report: (ScriptDependenciesResolver.ReportSeverity, String, ScriptContents.Position?) -> Unit,
+                         previousDependencies: KotlinScriptExternalDependencies?
+    ): Future<KotlinScriptExternalDependencies?>
+    {
+        return object : KotlinScriptExternalDependencies {
+            override val classpath: Iterable<File> = classpathFromClassloader()
+            override val imports: Iterable<String> = listOf("org.jetbrains.kotlin.scripts.DependsOn", "org.jetbrains.kotlin.scripts.DependsOnTwo")
+        }.asFuture()
+    }
+
+    protected fun classpathFromClassloader(): List<File> =
+            (TestKotlinScriptDependenciesResolver::class.java.classLoader as? URLClassLoader)?.urLs
+                    ?.mapNotNull { it.toFile() }
+                    ?.filter { it.path.contains("out") && it.path.contains("test") }
+            ?: emptyList()
+}
+
+class TestKotlinScriptDependenciesResolver : TestKotlinScriptDummyDependenciesResolver() {
 
     private val kotlinPaths by lazy { PathUtil.getKotlinPathsForCompiler() }
 
@@ -247,13 +277,12 @@ class TestKotlinScriptDependenciesResolver : ScriptDependenciesResolver {
             override val imports: Iterable<String> = listOf("org.jetbrains.kotlin.scripts.DependsOn", "org.jetbrains.kotlin.scripts.DependsOnTwo")
         }.asFuture()
     }
-
-    private fun classpathFromClassloader(): List<File> =
-            (TestKotlinScriptDependenciesResolver::class.java.classLoader as? URLClassLoader)?.urLs
-                    ?.mapNotNull { it.toFile() }
-                    ?.filter { it.path.contains("out") && it.path.contains("test") }
-            ?: emptyList()
 }
+
+@ScriptTemplateDefinition(
+        scriptFilePattern =".*\\.kts",
+        resolver = TestKotlinScriptDummyDependenciesResolver::class)
+abstract class ScriptWithIntParamAndDummyResolver(val num: Int)
 
 @ScriptTemplateDefinition(
         scriptFilePattern =".*\\.kts",

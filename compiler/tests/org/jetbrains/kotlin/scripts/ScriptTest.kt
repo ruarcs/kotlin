@@ -181,6 +181,7 @@ class ScriptTest : KtUsefulTestCase() {
             aClass2!!.getConstructor(Integer.TYPE).newInstance(4)
         }
         Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
+        println()
     }
 
     @Test
@@ -251,7 +252,7 @@ class ScriptTest : KtUsefulTestCase() {
 
         val rootDisposable = Disposer.newDisposable()
         try {
-            val configuration = KotlinTestUtils.newConfiguration(ConfigurationKind.JDK_ONLY, TestJdkKind.FULL_JDK)
+            val configuration = KotlinTestUtils.newConfiguration(ConfigurationKind.ALL, TestJdkKind.FULL_JDK)
             configuration.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
             configuration.addKotlinSourceRoot(scriptPath)
             configuration.add(JVMConfigurationKeys.SCRIPT_DEFINITIONS, scriptDefinition)
