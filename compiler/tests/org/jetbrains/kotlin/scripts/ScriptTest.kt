@@ -17,7 +17,6 @@
 package org.jetbrains.kotlin.scripts
 
 import com.intellij.openapi.util.Disposer
-import junit.framework.TestCase
 import org.jetbrains.kotlin.builtins.DefaultBuiltIns
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.*
@@ -47,23 +46,32 @@ class ScriptTest : KtUsefulTestCase() {
     fun testScriptWithParam() {
         val aClass = compileScript("fib.kts", SimpleParamsTestScriptDefinition(".kts", numIntParam()))
         Assert.assertNotNull(aClass)
-        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        val out = captureOut {
+            aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
     fun testStandardScriptWithParams() {
         val aClass = compileScript("fib_std.kts", StandardScriptDefinition)
         Assert.assertNotNull(aClass)
-        val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, listOf("4", "comment"))
-        Assert.assertNotNull(anObj)
+        val out = captureOut {
+            val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, listOf("4", "comment"))
+            Assert.assertNotNull(anObj)
+        }
+        Assert.assertEquals(NUM_4_LINE + " (comment)" + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
     fun testStandardScriptWithoutParams() {
         val aClass = compileScript("fib_std.kts", StandardScriptDefinition)
         Assert.assertNotNull(aClass)
-        val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, emptyList())
-        Assert.assertNotNull(anObj)
+        val out = captureOut {
+            val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, emptyList())
+            Assert.assertNotNull(anObj)
+        }
+        Assert.assertEquals(NUM_4_LINE + " (none)" + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
@@ -72,63 +80,90 @@ class ScriptTest : KtUsefulTestCase() {
         tmpdir.mkdirs()
         val aClass = compileScript("fib_std.kts", StandardScriptDefinition, saveClassesDir = tmpdir)
         Assert.assertNotNull(aClass)
-        val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, emptyList())
-        Assert.assertNotNull(anObj)
+        val out1 = captureOut {
+            val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, emptyList())
+            Assert.assertNotNull(anObj)
+        }
+        Assert.assertEquals(NUM_4_LINE + " (none)" + FIB_SCRIPT_OUTPUT_TAIL, out1)
         val savedClassLoader = URLClassLoader(arrayOf(tmpdir.toURI().toURL()))
-        val aClassSaved = savedClassLoader.loadClass(aClass.name)
+        val aClassSaved = savedClassLoader.loadClass(aClass!!.name)
         Assert.assertNotNull(aClassSaved)
-        val anObjSaved = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClassSaved!!, emptyList())
-        Assert.assertNotNull(anObjSaved)
+        val out2 = captureOut {
+            val anObjSaved = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClassSaved!!, emptyList())
+            Assert.assertNotNull(anObjSaved)
+        }
+        Assert.assertEquals(NUM_4_LINE + " (none)" + FIB_SCRIPT_OUTPUT_TAIL, out2)
     }
 
     @Test
     fun testScriptWithParamConversion() {
         val aClass = compileScript("fib.kts", SimpleParamsTestScriptDefinition(".kts", numIntParam()))
         Assert.assertNotNull(aClass)
-        val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, listOf("4"))
-        Assert.assertNotNull(anObj)
+        val out = captureOut {
+            val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, listOf("4"))
+            Assert.assertNotNull(anObj)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
     fun testScriptWithPackage() {
         val aClass = compileScript("fib.pkg.kts", SimpleParamsTestScriptDefinition(".kts", numIntParam()))
         Assert.assertNotNull(aClass)
-        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        val out = captureOut {
+            aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
     fun testScriptWithScriptDefinition() {
         val aClass = compileScript("fib.kts", SimpleParamsTestScriptDefinition(".kts", numIntParam()))
         Assert.assertNotNull(aClass)
-        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        val out = captureOut {
+            aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
     fun testScriptWithClassParameter() {
         val aClass = compileScript("fib_cp.kts", ReflectedParamClassTestScriptDefinition(".kts", "param", TestParamClass::class), runIsolated = false)
         Assert.assertNotNull(aClass)
-        aClass!!.getConstructor(TestParamClass::class.java).newInstance(TestParamClass(4))
+        val out = captureOut {
+            aClass!!.getConstructor(TestParamClass::class.java).newInstance(TestParamClass(4))
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
     fun testScriptWithBaseClass() {
         val aClass = compileScript("fib_dsl.kts", ReflectedSuperclassTestScriptDefinition(".kts", numIntParam(), TestDSLClass::class), runIsolated = false)
         Assert.assertNotNull(aClass)
-        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        val out = captureOut {
+            aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
     fun testScriptWithBaseClassWithParam() {
         val aClass = compileScript("fib_dsl.kts", ReflectedSuperclassWithParamsTestScriptDefinition(".kts", numIntParam() + numIntParam("passthrough"), TestDSLClassWithParam::class, numIntParam("passthrough")), runIsolated = false)
         Assert.assertNotNull(aClass)
-        aClass!!.getConstructor(Integer.TYPE, Integer.TYPE).newInstance(4, 1)
+        val out = captureOut {
+            aClass!!.getConstructor(Integer.TYPE, Integer.TYPE).newInstance(4, 1)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
     fun testScriptWithInterface() {
         val aClass = compileScript("fib_dsl.kts", ReflectedSuperclassTestScriptDefinition(".kts", numIntParam(), TestDSLInterface::class), runIsolated = false)
         Assert.assertNotNull(aClass)
-        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        val out = captureOut {
+            aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
@@ -141,6 +176,11 @@ class ScriptTest : KtUsefulTestCase() {
 
         val aClass2 = compileScript("fib_ext.kts", SimpleParamsWithClasspathTestScriptDefinition(".kts", numIntParam(), classpath = cp), runIsolated = true)
         Assert.assertNotNull(aClass2)
+
+        val out = captureOut {
+            aClass2!!.getConstructor(Integer.TYPE).newInstance(4)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
@@ -153,6 +193,11 @@ class ScriptTest : KtUsefulTestCase() {
 
         val aClass2 = compileScript("fib_ext.kts", SimpleParamsWithClasspathTestScriptDefinition(".kts", numIntParam(), classpath = cp, extraDependencies = SimpleScriptExtraDependencies(cp)), runIsolated = true)
         Assert.assertNotNull(aClass2)
+
+        val out = captureOut {
+            aClass2!!.getConstructor(Integer.TYPE).newInstance(4)
+        }
+        Assert.assertEquals(NUM_4_LINE + FIB_SCRIPT_OUTPUT_TAIL, out)
     }
 
     @Test
