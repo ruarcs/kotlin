@@ -19,7 +19,6 @@ package org.jetbrains.kotlin.resolve.lazy.descriptors
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.descriptors.impl.ConstructorDescriptorImpl
-import org.jetbrains.kotlin.descriptors.impl.PropertyDescriptorImpl
 import org.jetbrains.kotlin.descriptors.impl.ValueParameterDescriptorImpl
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
@@ -75,39 +74,6 @@ class LazyScriptClassMemberScope(
     }
 
     override fun createPropertiesFromPrimaryConstructorParameters(name: Name, result: MutableSet<PropertyDescriptor>) {
-        val primaryConstructor = getPrimaryConstructor()!!
-        val parametersToPassToSuperclass = scriptDescriptor.scriptParametersToPassToSuperclass.map { it.first }
-        for (valueParameterDescriptor in primaryConstructor.valueParameters) {
-            if (name == valueParameterDescriptor.name && name !in parametersToPassToSuperclass) {
-                result.add(createPropertyFromScriptParameter(scriptDescriptor, valueParameterDescriptor))
-            }
-        }
-    }
-
-    private fun createPropertyFromScriptParameter(
-            scriptDescriptor: ScriptDescriptor,
-            parameter: ValueParameterDescriptor
-    ): PropertyDescriptor {
-        val propertyDescriptor = PropertyDescriptorImpl.create(
-                scriptDescriptor,
-                Annotations.EMPTY,
-                Modality.FINAL,
-                Visibilities.PUBLIC,
-                false,
-                parameter.name,
-                CallableMemberDescriptor.Kind.DECLARATION,
-                SourceElement.NO_SOURCE,
-                /* lateInit = */ false,
-                /* isConst = */ false
-        )
-        propertyDescriptor.setType(
-                parameter.type,
-                listOf(),
-                scriptDescriptor.thisAsReceiverParameter,
-                null as ReceiverParameterDescriptor?
-        )
-        propertyDescriptor.initialize(null, null)
-        return propertyDescriptor
     }
 
     override fun recordLookup(name: Name, from: LookupLocation) {

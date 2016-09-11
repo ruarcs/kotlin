@@ -34,6 +34,7 @@ import org.junit.Assert
 import org.junit.Test
 import java.io.File
 import java.lang.Exception
+import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
 import java.util.concurrent.Future
 import kotlin.reflect.KClass
@@ -133,6 +134,53 @@ class ScriptTest2 {
         Assert.assertNotNull(aClass)
         aClass!!.getConstructor(Array<String>::class.java).newInstance(arrayOf("4", "other"))
     }
+
+    @Test
+    fun testScriptWithPackage() {
+        val aClass = compileScript("fib.pkg.kts", ScriptWithIntParam::class)
+        Assert.assertNotNull(aClass)
+        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+    }
+
+    @Test
+    fun testScriptWithScriptDefinition() {
+        val aClass = compileScript("fib.kts", ScriptWithIntParam::class)
+        Assert.assertNotNull(aClass)
+        aClass!!.getConstructor(Integer.TYPE).newInstance(4)
+    }
+
+    @Test
+    fun testScriptWithParamConversion() {
+        val aClass = compileScript("fib.kts", ScriptWithIntParam::class)
+        Assert.assertNotNull(aClass)
+        val anObj = KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, listOf("4"))
+        Assert.assertNotNull(anObj)
+    }
+
+    @Test
+    fun testSmokeScriptException() {
+        val aClass = compileSmokeTestScript("scriptException/script.kts", ScriptWithArrayParam::class)
+        Assert.assertNotNull(aClass)
+        var exceptionThrown = false
+        try {
+            KotlinToJVMBytecodeCompiler.tryConstructClassPub(aClass!!, emptyList())
+        }
+        catch (e: InvocationTargetException) {
+            Assert.assertTrue(e.cause is IllegalStateException)
+            exceptionThrown = true
+        }
+        Assert.assertTrue(exceptionThrown)
+    }
+
+    private fun compileSmokeTestScript(
+            scriptPath: String,
+            scriptBase: KClass<out Any>,
+            runIsolated: Boolean = true,
+            suppressOutput: Boolean = false): Class<*>? =
+            compileScriptImpl("compiler/testData/integration/smoke/" + scriptPath,
+                              KotlinScriptDefinitionFromTemplate(scriptBase, null, null, null),
+                              runIsolated,
+                              suppressOutput)
 
     private fun compileScript(
             scriptPath: String,
