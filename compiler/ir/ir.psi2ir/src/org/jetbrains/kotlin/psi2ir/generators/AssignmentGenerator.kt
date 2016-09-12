@@ -126,8 +126,10 @@ class AssignmentGenerator(statementGenerator: StatementGenerator) : StatementGen
                 generateAssignmentReceiverForProperty(descriptor, operator, ktLeft, resolvedCall)
             is VariableDescriptor ->
                 VariableLValue(ktLeft.startOffset, ktLeft.endOffset, descriptor, operator)
+            is ReceiverParameterDescriptor ->
+                LoadOnlyLValue(statementGenerator.generateReceiver(ktLeft, descriptor.value))
             else ->
-                TODO("Other cases of LHS")
+                throw AssertionError("Unsupported kind of LHS: ${descriptor.javaClass.simpleName} $descriptor")
         }
     }
 

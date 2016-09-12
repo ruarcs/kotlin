@@ -16,31 +16,19 @@
 
 package org.jetbrains.kotlin.psi2ir.intermediate
 
-import org.jetbrains.kotlin.descriptors.VariableDescriptor
-import org.jetbrains.kotlin.ir.declarations.IrVariable
 import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetVariableImpl
-import org.jetbrains.kotlin.ir.expressions.IrOperator
-import org.jetbrains.kotlin.ir.expressions.impl.IrSetVariableImpl
+import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.typeUtil.builtIns
 
-class VariableLValue(
-        val startOffset: Int,
-        val endOffset: Int,
-        val descriptor: VariableDescriptor,
-        val irOperator: IrOperator? = null
-) : LValue, AssignmentReceiver {
-    constructor(irVariable: IrVariable, irOperator: IrOperator? = null) : this(
-            irVariable.startOffset, irVariable.endOffset, irVariable.descriptor, irOperator)
-
-    override val type: KotlinType get() = descriptor.type
+class LoadOnlyLValue(val value: IntermediateValue) : LValue, AssignmentReceiver {
+    override val type: KotlinType
+        get() = value.type
 
     override fun load(): IrExpression =
-            IrGetVariableImpl(startOffset, endOffset, descriptor, irOperator)
+            value.load()
 
     override fun store(irExpression: IrExpression): IrExpression =
-            IrSetVariableImpl(startOffset, endOffset, descriptor, irExpression, irOperator)
+            throw AssertionError("LoadOnlyLValue ${value.load().render()} can't be used in store operation")
 
     override fun assign(withLValue: (LValue) -> IrExpression): IrExpression =
             withLValue(this)
