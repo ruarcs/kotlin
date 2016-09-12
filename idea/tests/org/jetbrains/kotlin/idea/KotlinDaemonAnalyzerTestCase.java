@@ -30,6 +30,7 @@ abstract public class KotlinDaemonAnalyzerTestCase extends DaemonAnalyzerTestCas
         VfsRootAccess.allowRootAccess(KotlinTestUtils.getHomeDirectory());
         super.setUp();
 
+        System.out.println("Before: " + System.getProperty("java.util.concurrent.ForkJoinPool.common.threadFactory"));
         printThreadNames();
     }
 
@@ -50,6 +51,7 @@ abstract public class KotlinDaemonAnalyzerTestCase extends DaemonAnalyzerTestCas
         }
         catch (AssertionError ae) {
             System.out.println("BBB!!!");
+            System.out.println("After: " + System.getProperty("java.util.concurrent.ForkJoinPool.common.threadFactory"));
             printThreadNames();
             throw ae;
         }

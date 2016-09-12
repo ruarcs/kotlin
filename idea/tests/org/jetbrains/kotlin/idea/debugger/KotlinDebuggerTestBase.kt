@@ -56,6 +56,7 @@ import org.jetbrains.kotlin.psi.psiUtil.getElementTextWithContext
 import org.jetbrains.kotlin.test.InTextDirectivesUtils
 import org.jetbrains.kotlin.test.InTextDirectivesUtils.findStringWithPrefixes
 import java.io.File
+import java.lang.AssertionError
 import javax.swing.SwingUtilities
 
 abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
@@ -75,13 +76,16 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
     override fun setUp() {
         super.setUp()
         KotlinDaemonAnalyzerTestCase.printThreadNames()
+
+        println("Before: ${System.getProperty("java.util.concurrent.ForkJoinPool.common.threadFactory")}")
     }
 
     override fun tearDown() {
+        println("After: ${System.getProperty("java.util.concurrent.ForkJoinPool.common.threadFactory")}")
         try {
             super.tearDown()
         }
-        catch (ae: AssertionError) {
+        catch (ae: java.lang.AssertionError) {
             println("AAA!!!")
             KotlinDaemonAnalyzerTestCase.printThreadNames()
             throw ae
