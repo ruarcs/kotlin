@@ -45,7 +45,14 @@ abstract public class KotlinDaemonAnalyzerTestCase extends DaemonAnalyzerTestCas
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
+        try {
+            super.tearDown();
+        }
+        catch (AssertionError ae) {
+            System.out.println("BBB!!!");
+            printThreadNames();
+            throw ae;
+        }
         VfsRootAccess.disallowRootAccess(KotlinTestUtils.getHomeDirectory());
     }
 }

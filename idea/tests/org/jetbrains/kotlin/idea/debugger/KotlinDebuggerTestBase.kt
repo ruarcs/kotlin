@@ -78,7 +78,14 @@ abstract class KotlinDebuggerTestBase : KotlinDebuggerTestCase() {
     }
 
     override fun tearDown() {
-        super.tearDown()
+        try {
+            super.tearDown()
+        }
+        catch (ae: AssertionError) {
+            println("AAA!!!")
+            KotlinDaemonAnalyzerTestCase.printThreadNames()
+            throw ae
+        }
         restoreDefaultSettings()
     }
 
