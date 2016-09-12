@@ -1104,11 +1104,11 @@ public class KotlinExpressionParsing extends AbstractKotlinParsing {
 
     private void advanceLambdaBlock() {
         int braceCount = 1;
-        while (true) {
-            if (at(LBRACE)) {
+        while (!eof()) {
+            if (_at(LBRACE)) {
                 braceCount++;
             }
-            else if (at(RBRACE)) {
+            else if (_at(RBRACE)) {
                 braceCount--;
             }
 
